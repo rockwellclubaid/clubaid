@@ -1,7 +1,7 @@
 // Club AID — makes the home-screen app open even on a weak connection.
 // Always tries the newest version from the internet first; the saved copy is used only when offline.
 // Questions, accounts and the Club Feed always go live to Club AID's server (never saved here).
-const CACHE = "clubaid-v1";
+const CACHE = "clubaid-v2";
 const FILES = ["./", "./index.html", "./manifest.webmanifest", "./icons/icon-192.png", "./icons/icon-512.png", "./icons/apple-touch-icon.png", "./icons/favicon-32.png"];
 self.addEventListener("install", function (e) {
   e.waitUntil(caches.open(CACHE).then(function (c) { return c.addAll(FILES); }).then(function () { return self.skipWaiting(); }));

@@ -6,8 +6,8 @@
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
-  "background_color": "#0F2B22",
-  "theme_color": "#0F2B22",
+  "background_color": "#05351A",
+  "theme_color": "#05351A",
   "lang": "en",
   "categories": ["lifestyle", "utilities"],
   "icons": [
