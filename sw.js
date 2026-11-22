@@ -1,13 +1,13 @@
 // Club AID — the part that keeps working in the background:
-// • opens fast: the newest version is asked for first, but if the connection is slow (over 2.5 s) the saved copy opens at once
+// • opens fast: the newest version is asked for first, but if the connection is slow (over 1 s) the saved copy opens at once
 //   and the new version is saved for the next open. Unchanged files cost only a tiny check, never a full download.
 // • fonts, icons and Club Feed pictures are kept on the phone, so they appear instantly the next time
 // • phone notifications for new Club Feed posts (the message itself is asked from Club AID when it arrives)
 // Questions, accounts and the Club Feed text always go live to Club AID's server (never saved here).
-const CACHE = "clubaid-v56", PICS = "clubaid-pics-v1", FONTS = "clubaid-fonts-v1";
+const CACHE = "clubaid-v57", PICS = "clubaid-pics-v1", FONTS = "clubaid-fonts-v1";
 const BRIDGE = new URL(self.location.href).searchParams.get("b") || "";
 const FILES = ["./", "./manifest.webmanifest", "./icons/icon-192.png", "./icons/icon-512.png", "./icons/apple-touch-icon.png", "./icons/favicon-32.png", "./icons/badge-96.png"];
-const KEEP = [CACHE, PICS, FONTS], PIC_MAX = 120, PAGE_WAIT = 2500;
+const KEEP = [CACHE, PICS, FONTS], PIC_MAX = 120, PAGE_WAIT = 1000;
 self.addEventListener("install", function (e) {
   e.waitUntil(caches.open(CACHE).then(function (c) { return c.addAll(FILES.map(function (f) { return new Request(f, { cache: "reload" }); })); }).then(function () { return self.skipWaiting(); }));
 });
