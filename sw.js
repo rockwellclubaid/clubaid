@@ -4,7 +4,7 @@
 // • fonts, icons and Club Feed pictures are kept on the phone, so they appear instantly the next time
 // • phone notifications for new Club Feed posts (the message itself is asked from Club AID when it arrives)
 // Questions, accounts and the Club Feed text always go live to Club AID's server (never saved here).
-const CACHE = "clubaid-v55", PICS = "clubaid-pics-v1", FONTS = "clubaid-fonts-v1";
+const CACHE = "clubaid-v56", PICS = "clubaid-pics-v1", FONTS = "clubaid-fonts-v1";
 const BRIDGE = new URL(self.location.href).searchParams.get("b") || "";
 const FILES = ["./", "./manifest.webmanifest", "./icons/icon-192.png", "./icons/icon-512.png", "./icons/apple-touch-icon.png", "./icons/favicon-32.png", "./icons/badge-96.png"];
 const KEEP = [CACHE, PICS, FONTS], PIC_MAX = 120, PAGE_WAIT = 2500;
@@ -68,7 +68,7 @@ self.addEventListener("fetch", function (e) {
 // ---- notifications ----
 self.addEventListener("push", function (e) {
   e.waitUntil((async function () {
-    let info = { title: "Club AID", body: "There's something new in the Club Feed.", url: "./", tag: "clubaid" };
+    let info = { title: "📰 New in the Club Feed", body: "Tap to see what's new at The Rockwell Club.", url: "./", tag: "clubaid" };
     try {
       const sub = await self.registration.pushManager.getSubscription();
       if (BRIDGE) {
