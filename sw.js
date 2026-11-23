@@ -1,13 +1,13 @@
 // Club AID — the part that keeps working in the background:
-// • opens fast: the newest version is asked for first, but if the connection is slow (over 1 s) the saved copy opens at once
-//   and the new version is saved for the next open. Unchanged files cost only a tiny check, never a full download.
+// • opens instantly: the saved copy opens at once; the newest version is fetched in the background, saved for the next open,
+//   and the open page offers "Refresh" when a new build arrives. Unchanged files cost only a tiny check, never a full download.
 // • fonts, icons and Club Feed pictures are kept on the phone, so they appear instantly the next time
 // • phone notifications for new Club Feed posts (the message itself is asked from Club AID when it arrives)
 // Questions, accounts and the Club Feed text always go live to Club AID's server (never saved here).
-const CACHE = "clubaid-v96", PICS = "clubaid-pics-v1", FONTS = "clubaid-fonts-v1";
+const CACHE = "clubaid-v97", PICS = "clubaid-pics-v1", FONTS = "clubaid-fonts-v1";
 const BRIDGE = new URL(self.location.href).searchParams.get("b") || "";
 const FILES = ["./", "./manifest.webmanifest", "./icons/icon-192.png", "./icons/icon-512.png", "./icons/apple-touch-icon.png", "./icons/favicon-32.png", "./icons/badge-96.png"];
-const KEEP = [CACHE, PICS, FONTS], PIC_MAX = 120, PAGE_WAIT = 1000;
+const KEEP = [CACHE, PICS, FONTS], PIC_MAX = 120;
 self.addEventListener("install", function (e) {
   e.waitUntil(caches.open(CACHE).then(function (c) { return c.addAll(FILES.map(function (f) { return new Request(f, { cache: "reload" }); })); }).then(function () { return self.skipWaiting(); }));
 });
@@ -17,20 +17,30 @@ self.addEventListener("activate", function (e) {
 });
 function put(name, key, res) { return caches.open(name).then(function (c) { return c.put(key, res); }); }
 function trim(name, max) { return caches.open(name).then(function (c) { return c.keys().then(function (k) { return k.length > max ? Promise.all(k.slice(0, k.length - max).map(function (r) { return c.delete(r); })) : null; }); }); }
-// the page itself: newest first (a quick "has it changed?" check), saved copy if the network is slow or off
+// the page itself (v26.11.23): the saved copy opens AT ONCE (no waiting for the network), and the newest version is fetched in
+// the background and saved. If it's a newer build, the open page is told ("A new version is ready" → Refresh) and every later open
+// uses it. First visit (nothing saved yet) or a saved copy older than 7 days: straight from the network, as before.
+function verOf(t) { const m = String(t || "").match(/WEB_VERSION\s*=\s*"(v[\d.]+-\d{4})"/) || String(t || "").match(/"(v\d\d\.\d\d\.\d\d-\d{4})"/); return m ? m[1] : ""; }
 function page(e) {
   const key = "./";
-  const net = fetch(e.request, { cache: "no-cache" }).then(function (res) {
-    if (res && res.ok) { const copy = res.clone(); e.waitUntil(put(CACHE, key, copy)); }
-    return res;
-  });
-  const saved = caches.match(key);
-  return new Promise(function (done) {
-    let settled = false; const finish = function (r) { if (!settled && r) { settled = true; done(r); } };
-    const t = setTimeout(function () { saved.then(finish); }, PAGE_WAIT);
-    net.then(function (r) { clearTimeout(t); if (r && r.ok) finish(r); else saved.then(function (s) { finish(s || r); }); })
-       .catch(function () { clearTimeout(t); saved.then(function (s) { finish(s || Response.error()); }); });
-    e.waitUntil(net.catch(function () {}));
+  return caches.open(CACHE).then(function (c) {
+    return c.match(key).then(function (saved) {
+      const savedText = saved ? saved.clone().text() : Promise.resolve("");     // read before the saved copy is handed to the page
+      const net = fetch(e.request, { cache: "no-cache" }).then(function (res) {
+        if (!res || !res.ok) return res;
+        const copy = res.clone();
+        e.waitUntil(Promise.all([copy.text(), savedText]).then(function (tx) {
+          const nv = verOf(tx[0]), ov = verOf(tx[1]);
+          return c.put(key, new Response(tx[0], { headers: { "Content-Type": "text/html; charset=utf-8", "X-Saved-At": String(Date.now()) } })).then(function () {
+            if (saved && nv && ov && nv !== ov) return self.clients.matchAll({ type: "window", includeUncontrolled: true }).then(function (list) { list.forEach(function (w) { w.postMessage({ updateReady: nv }); }); });
+          });
+        }));
+        return res;
+      });
+      const at = saved ? Number(saved.headers.get("X-Saved-At")) || Date.parse(saved.headers.get("Date") || "") || Date.now() : 0, age = saved ? Date.now() - at : Infinity;
+      if (saved && age < 7 * 864e5) { e.waitUntil(net.catch(function () {})); return saved; }
+      return net.then(function (r) { return r && r.ok ? r : (saved || r); }).catch(function () { return saved || Response.error(); });
+    });
   });
 }
 // saved copy at once, refreshed quietly in the background (icons, manifest, font styles, feed pictures)
