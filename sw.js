@@ -4,7 +4,7 @@
 // • fonts, icons and Club Feed pictures are kept on the phone, so they appear instantly the next time
 // • phone notifications for new Club Feed posts (the message itself is asked from Club AID when it arrives)
 // Questions, accounts and the Club Feed text always go live to Club AID's server (never saved here).
-const CACHE = "clubaid-v146", PICS = "clubaid-pics-v1", FONTS = "clubaid-fonts-v1";
+const CACHE = "clubaid-v147", PICS = "clubaid-pics-v1", FONTS = "clubaid-fonts-v1";
 const BRIDGE = new URL(self.location.href).searchParams.get("b") || "";
 const FILES = ["./", "./manifest.webmanifest", "./icons/icon-192.png", "./icons/icon-512.png", "./icons/apple-touch-icon.png", "./icons/favicon-32.png", "./icons/badge-96.png"];
 const KEEP = [CACHE, PICS, FONTS], PIC_MAX = 120;
@@ -66,6 +66,7 @@ self.addEventListener("fetch", function (e) {
   const req = e.request; if (req.method !== "GET") return;
   const u = new URL(req.url);
   if (u.origin === self.location.origin) {
+    if (u.pathname.indexOf("/clubaid-media/") === 0) return;   // (v26.11.26) HD videos stream straight from the media library, never cached
     if (req.mode === "navigate") return e.respondWith(page(e));
     if (u.pathname.endsWith("/sw.js")) return;
     return e.respondWith(savedThenRefresh(e, CACHE, 0));
